@@ -27,8 +27,9 @@ io.on('connection', (socket)=>{
     //recieve any new messages
     socket.emit('message', 'Welcome!')
     socket.broadcast.emit('message', 'A new user has joined')
-    socket.on('sendMessage', (message)=>{
+    socket.on('sendMessage', (message, callback)=>{
         io.emit('message',message)
+        callback()
     })
 
     //sending a message if a user disconnects

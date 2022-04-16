@@ -1,17 +1,29 @@
 //writing client site js stuff
 //client should listen to welcome message
 const socket = io()
+
+//Elemetns
+const $messageForm = document.querySelector('#message-form')
+const $messageFormInput = $messageForm.querySelector('input')
+const $messageFormButton = $messageForm.querySelector('button')
+
 socket.on('message', (message)=>{
     console.log(message)
 })
 
-document.querySelector('#message-form').addEventListener('submit', (e)=>{
+$messageForm.addEventListener('submit', (e)=>{
     //to prevent web-page reload
     e.preventDefault()
 
+    $messageFormButton.setAttribute('disabled', 'disabled')
+    //disable
     const message = e.target.elements.message.value
 
     socket.emit('sendMessage', message, (error)=>{
+        $messageFormButton.removeAttribute('disabled')
+        $messageFormInput.value = ''
+        $messageFormInput.focus()
+        //enable
         if(error){
             return console.log(error)
         }
@@ -29,6 +41,8 @@ document.querySelector('#send-location').addEventListener('click', ()=>{
         socket.emit('sendLocation', {
             latitude: position.coords.latitude,
             longitude: position.coords.longitude
+        }, ()=>{
+            console.log('location shared')
         })
     })
 

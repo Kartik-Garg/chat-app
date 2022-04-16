@@ -1,6 +1,7 @@
 const express = require('express')
 const path = require('path')
 const Filter = require('bad-words')
+const {generateMessage} = require('./utils/messages')
 //const socketio = require('socket.io')
 
 const app = express()
@@ -26,8 +27,8 @@ io.on('connection', (socket)=>{
 
     //send welcome to new connections, so have to use socket, because already connected ones should not 
     //recieve any new messages
-    socket.emit('message', 'Welcome!')
-    socket.broadcast.emit('message', 'A new user has joined')
+    socket.emit('message', generateMessage('Welcome!'))
+    socket.broadcast.emit('message', generateMessage('A new user has joined'))
     socket.on('sendMessage', (message, callback)=>{
         const filter = new Filter()
 
@@ -35,13 +36,13 @@ io.on('connection', (socket)=>{
             return callback('Profanity is not allowed')
         }
 
-        io.emit('message',message)
+        io.emit('message',generateMessage(message))
         callback()
     })
 
     //sending a message if a user disconnects
     socket.on('disconnect', ()=>{
-        io.emit('message', 'A user has left')
+        io.emit('message', generateMessage('A user has left'))
     })
 
     //receiing location from client

@@ -7,6 +7,9 @@ const $messageForm = document.querySelector('#message-form')
 const $messageFormInput = $messageForm.querySelector('input')
 const $messageFormButton = $messageForm.querySelector('button')
 
+//location elements
+const $sendLocation = document.querySelector('#send-location')
+
 socket.on('message', (message)=>{
     console.log(message)
 })
@@ -31,10 +34,12 @@ $messageForm.addEventListener('submit', (e)=>{
     })
 })
 
-document.querySelector('#send-location').addEventListener('click', ()=>{
+$sendLocation.addEventListener('click', ()=>{
     if(!navigator.geolocation){
         return alert('GeoLocation is not supported by your browser')
     }
+    //disabling after hittin click
+    $sendLocation.setAttribute('disabled','disabled')
 
     navigator.geolocation.getCurrentPosition((position)=>{
         //console.log(location)
@@ -43,6 +48,8 @@ document.querySelector('#send-location').addEventListener('click', ()=>{
             longitude: position.coords.longitude
         }, ()=>{
             console.log('location shared')
+            //enable button after getting ack
+            $sendLocation.removeAttribute('disabled')
         })
     })
 

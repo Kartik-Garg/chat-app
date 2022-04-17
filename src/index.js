@@ -1,62 +1,63 @@
-const express = require('express')
 const path = require('path')
+const http = require('http')
+const express = require('express')
+const socketio = require('socket.io')
 const Filter = require('bad-words')
-const {generateMessage, generateLocationMessage} = require('./utils/messages')
-const {addUser, removeUser, getUser, getUsersInRoom} = require('./utils/users')
-//const socketio = require('socket.io')
+const { generateMessage, generateLocationMessage } = require('./utils/messages')
+const { addUser, removeUser, getUser, getUsersInRoom } = require('./utils/users')
 
 const app = express()
-const PORT = 3000
+const server = http.createServer(app)
+const io = socketio(server)
 
-const publicDirPath = path.join(__dirname, "../public")
-//use express middleware to serve public content
-app.use(express.static(publicDirPath))
+const port = process.env.PORT || 3000
+const publicDirectoryPath = path.join(__dirname, '../public')
 
-const server = app.listen(PORT, () => {
-    console.log(`server is up and running on port ${PORT}`)
-})
+app.use(express.static(publicDirectoryPath))
 
-//let for this block and var is global
-let count = 0
+io.on('connection', (socket) => {
+    console.log('New WebSocket connection')
 
-//setup socketio with server
-const io = require('socket.io')(server)
+    socket.on('join', (options, callback) => {
+        const { error, user } = addUser({ id: socket.id, ...options })
 
-//socket here is an object which contains information about new connection
-io.on('connection', (socket)=>{
-    console.log('New WebSocket connection', count)
-
-    //send welcome to new connections, so have to use socket, because already connected ones should not 
-    //recieve any new messages
-    
-    socket.on('join', ({username, room})=>{
-        socket.join(room)
-
-        socket.emit('message', generateMessage('Welcome!'))
-        socket.broadcast.to(room).emit('message', generateMessage(`${username} has joined!`))
-    })
-
-    socket.on('sendMessage', (message, callback)=>{
-        const filter = new Filter()
-
-        if(filter.isProfane(message)){
-            return callback('Profanity is not allowed')
+        if (error) {
+            return callback(error)
         }
 
-        io.emit('message',generateMessage(message))
+        socket.join(user.room)
+
+        socket.emit('message', generateMessage('Welcome!'))
+        socket.broadcast.to(user.room).emit('message', generateMessage(`${user.username} has joined!`))
+
         callback()
     })
 
-    //sending a message if a user disconnects
-    socket.on('disconnect', ()=>{
-        io.emit('message', generateMessage('A user has left'))
-    })
+    socket.on('sendMessage', (message, callback) => {
+        const filter = new Filter()
 
-    //receiing location from client
-    socket.on('sendLocation', (location, callback)=>{
-        socket.emit('locationMessage', generateLocationMessage(`https://google.com/maps?q=${location.latitude},${location.longitude}`))
+        if (filter.isProfane(message)) {
+            return callback('Profanity is not allowed!')
+        }
+
+        io.to('Center City').emit('message', generateMessage(message))
         callback()
     })
 
-    
+    socket.on('sendLocation', (coords, callback) => {
+        io.emit('locationMessage', generateLocationMessage(`https://google.com/maps?q=${coords.latitude},${coords.longitude}`))
+        callback()
+    })
+
+    socket.on('disconnect', () => {
+        const user = removeUser(socket.id)
+
+        if (user) {
+            io.to(user.room).emit('message', generateMessage(`${user.username} has left!`))
+        }
+    })
+})
+
+server.listen(port, () => {
+    console.log(`Server is up on port ${port}!`)
 })
